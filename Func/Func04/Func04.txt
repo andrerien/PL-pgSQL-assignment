@@ -1,0 +1,23 @@
+CREATE OR REPLACE FUNCTION quantidadeAlteracoesPrecoMedicamento(
+    id_medicamento INTEGER,
+    dias_anteriores INTEGER
+)
+RETURNS INTEGER AS $$
+DECLARE
+    quantidade INTEGER;
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM medicamento WHERE medicamento_id = id_medicamento
+    ) THEN
+        RAISE EXCEPTION 'Não existe medicamento com este ID';
+    END IF;
+
+    SELECT COUNT(*)
+    INTO quantidade
+    FROM medicamento_controle
+    WHERE medicamento_id = id_medicamento
+      AND data_modificacao >= now() - (dias_anteriores || ' days')::INTERVAL;
+
+    RETURN quantidade;
+END;
+$$ LANGUAGE plpgsql;

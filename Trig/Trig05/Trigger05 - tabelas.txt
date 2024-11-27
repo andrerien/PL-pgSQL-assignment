@@ -1,0 +1,36 @@
+// Função para validar antes de atualizar a tabela internacao
+
+CREATE OR REPLACE FUNCTION validar_troca_leito()
+RETURNS TRIGGER AS $$
+BEGIN
+  
+    IF EXISTS (
+        SELECT 1 
+        FROM leito 
+        WHERE leito_id = NEW.leito_id AND status_ocupacao = TRUE
+    ) THEN
+        RAISE EXCEPTION 'O leito com ID % está ocupado e não pode ser atribuído.', NEW.leito_id;
+    END IF;
+
+    RETURN NEW; 
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER verificar_troca_leito
+BEFORE UPDATE ON internacao
+FOR EACH ROW
+EXECUTE FUNCTION validar_troca_leito();
+
+SELECT * FROM internacao;
+
+// Atualizando para um leito ocupado (falha)
+
+UPDATE internacao
+SET leito_id = 2
+WHERE internacao_id = 1;
+
+// Atualizando para um leito disponível (valida)
+
+UPDATE internacao
+SET leito_id = 3
+WHERE internacao_id = 1;

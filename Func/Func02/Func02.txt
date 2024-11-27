@@ -1,0 +1,19 @@
+CREATE OR REPLACE FUNCTION is_admitted(paciente_id_input INT)
+RETURNS INT AS $$
+DECLARE
+    internacao_ativa INT;
+BEGIN
+    SELECT internacao_id
+    INTO internacao_ativa
+    FROM internacao
+    WHERE paciente_id = paciente_id_input AND data_liberacao IS NULL
+    LIMIT 1;
+    IF internacao_ativa IS NOT NULL THEN
+        RAISE NOTICE 'O paciente ID % ainda está internado.', paciente_id_input;
+        RETURN internacao_ativa;
+    ELSE
+        RAISE NOTICE 'O paciente ID % não possui internação ativa.', paciente_id_input;
+        RETURN internacao_ativa;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;

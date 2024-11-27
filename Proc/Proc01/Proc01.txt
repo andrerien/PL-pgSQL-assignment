@@ -1,0 +1,77 @@
+CREATE OR REPLACE PROCEDURE obter_ultimo_agendamento(
+    in_paciente_id IN INT,
+    out_consulta OUT RECORD
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    paciente_existe BOOLEAN;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1 
+        FROM paciente 
+        WHERE paciente_id = in_paciente_id
+    ) INTO paciente_existe;
+
+    IF NOT paciente_existe THEN
+        RAISE EXCEPTION 'O paciente com ID % não existe.', in_paciente_id;
+    END IF;
+
+    SELECT * 
+    INTO out_consulta
+    FROM consulta
+    WHERE paciente_id = in_paciente_id
+    ORDER BY data_agendamento DESC
+    LIMIT 1;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Nenhuma consulta foi realizada com o paciente com o ID %.', in_paciente_id;
+    END IF;
+END;
+$$;
+
+
+DO $$
+DECLARE 
+	out_consulta RECORD;
+BEGIN 
+    CALL obter_ultimo_agendamento (1, out_consulta);
+    RAISE NOTICE 'Consulta ID: %, Data de Agendamento: %, Data de Execução: %, Diagnóstico: %, Prescrição: %',
+		out_consulta.consulta_id,
+		TO_CHAR(out_consulta.data_agendamento, 'DD/MM/YYYY HH24:MI'),
+		TO_CHAR(out_consulta.data_execucao, 'DD/MM/YYYY HH24:MI'),
+		out_consulta.diagnostico,
+		out_consulta.possui_prescricao;
+END;
+$$; --Paciente cadastrado.
+
+
+DO $$
+DECLARE 
+	out_consulta RECORD;
+BEGIN 
+    CALL obter_ultimo_agendamento (7, out_consulta);
+    RAISE NOTICE 'Consulta ID: %, Data de Agendamento: %, Data de Execução: %, Diagnóstico: %, Prescrição: %',
+		out_consulta.consulta_id,
+		TO_CHAR(out_consulta.data_agendamento, 'DD/MM/YYYY HH24:MI'),
+		TO_CHAR(out_consulta.data_execucao, 'DD/MM/YYYY HH24:MI'),
+		out_consulta.diagnostico,
+		out_consulta.possui_prescricao;
+END;
+$$; --Paciente cadastrado mas sem consultas agendadas.
+
+
+DO $$
+DECLARE 
+	out_consulta RECORD;
+BEGIN 
+    CALL obter_ultimo_agendamento (10, out_consulta);
+    RAISE NOTICE 'Consulta ID: %, Data de Agendamento: %, Data de Execução: %, Diagnóstico: %, Prescrição: %',
+		out_consulta.consulta_id,
+		TO_CHAR(out_consulta.data_agendamento, 'DD/MM/YYYY HH24:MI'),
+		TO_CHAR(out_consulta.data_execucao, 'DD/MM/YYYY HH24:MI'),
+		out_consulta.diagnostico,
+		out_consulta.possui_prescricao;
+END;
+$$; --Paciente não cadastrado.
+

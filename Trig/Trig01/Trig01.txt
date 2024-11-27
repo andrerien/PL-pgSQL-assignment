@@ -1,0 +1,21 @@
+CREATE OR REPLACE FUNCTION trig_func_atualiza_consulta_apos_prescricao()
+RETURNS TRIGGER AS $$
+BEGIN
+	UPDATE consulta
+	SET possui_prescricao = COALESCE (possui_prescricao, 0) + 1
+	WHERE consulta_id = NEW.consulta_id;
+
+	UPDATE consulta 
+	SET data_execucao = NOW()
+	WHERE consulta_id = NEW.consulta_id AND COALESCE(possui_prescricao, 0) = 1;
+	RETURN NEW;
+
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER trigger_atualiza_consulta_apos_prescricao
+AFTER INSERT ON prescricao
+FOR EACH ROW
+EXECUTE FUNCTION trig_func_atualiza_consulta_apos_prescricao();
+
+

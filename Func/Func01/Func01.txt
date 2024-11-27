@@ -1,0 +1,49 @@
+CREATE OR REPLACE FUNCTION verifica_prescricao (consulta_id_input int)
+RETURNS BOOLEAN AS $$
+DECLARE
+	existe_prescricao BOOLEAN;
+	consulta_existe BOOLEAN;
+BEGIN
+	IF consulta_id_input IS NULL THEN
+		RAISE EXCEPTION 'O ID da consulta informada não pode ser nulo.';
+		RETURN FALSE;
+	ELSIF consulta_id_input <= 0 THEN
+		RAISE EXCEPTION 'O ID da consulta informada deve ser maior que 0.';
+		RETURN FALSE;
+	END IF;
+
+	SELECT EXISTS (
+        SELECT 1
+        FROM consulta
+        WHERE consulta_id = consulta_id_input
+    ) INTO consulta_existe;
+
+    IF NOT consulta_existe THEN
+        RAISE EXCEPTION 'A consulta com ID % não existe na tabela consulta.', consulta_id_input;
+        RETURN FALSE;
+    END IF;
+
+	SELECT EXISTS (
+	SELECT 1
+	FROM prescricao
+	WHERE consulta_id = consulta_id_input
+	) INTO existe_prescricao;
+
+	RETURN existe_prescricao;
+
+	EXCEPTION
+	    WHEN OTHERS THEN
+	        RAISE EXCEPTION 'Erro ao verificar a prescrição: %', SQLERRM;
+	        RETURN FALSE;
+END;
+$$ LANGUAGE plpgsql;
+
+--Inserção de uma consulta que não estará associada a uma prescrição.
+INSERT INTO public.consulta(paciente_id, medico_id, data_agendamento, data_execucao, diagnostico)
+    VALUES (1, 2, DATE_TRUNC('minute', CURRENT_TIMESTAMP), NULL, 'Mal estar');
+
+SELECT verifica_prescricao(3); --Teste com uma consulta em que houve prescrição.
+
+SELECT verifica_prescricao(7); --Teste com uma consulta em que não houve prescrição.
+
+SELECT verifica_prescricao(50); --Teste com uma consulta inexistente.

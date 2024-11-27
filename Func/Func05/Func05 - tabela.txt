@@ -1,0 +1,29 @@
+-- A função retorna o nome do medicamento mais prescrito.
+
+CREATE OR REPLACE FUNCTION medicamento_mais_prescrito(p_medicamento_id INT) 
+RETURNS VARCHAR AS $$
+DECLARE
+    resultado VARCHAR;
+BEGIN
+    SELECT CONCAT(m.nome, ' - Total de prescrições: ', COUNT(p.medicamento_id)) 
+    INTO resultado
+    FROM public.prescricao p
+    JOIN public.medicamento m ON p.medicamento_id = m.medicamento_id
+    WHERE p.medicamento_id = p_medicamento_id
+    GROUP BY m.medicamento_id, m.nome
+    ORDER BY COUNT(p.medicamento_id) DESC
+    LIMIT 1;
+
+    IF resultado IS NULL THEN
+        RAISE EXCEPTION 'Nenhuma prescrição encontrada para o medicamento ID %', p_medicamento_id;
+    END IF;
+
+    RETURN resultado;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'Erro ao obter o medicamento mais prescrito para o medicamento ID %: %', p_medicamento_id, SQLERRM;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT medicamento_mais_prescrito(70);

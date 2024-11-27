@@ -1,0 +1,14 @@
+CREATE OR REPLACE FUNCTION dias_desde_ultima_consulta(paciente_id_input INT)
+RETURNS INT AS $$
+DECLARE
+    dias INT;
+BEGIN
+    SELECT 
+        COALESCE(DATE_PART('day', CURRENT_DATE - MAX(data_execucao)), 0)
+    INTO dias
+    FROM consulta
+    WHERE paciente_id = paciente_id_input;
+
+    RETURN dias;
+END;
+$$ LANGUAGE plpgsql;

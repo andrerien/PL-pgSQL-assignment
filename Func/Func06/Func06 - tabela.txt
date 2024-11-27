@@ -1,0 +1,27 @@
+// A função retorna o paciente com mais consultas em uma cidade
+
+CREATE OR REPLACE FUNCTION paciente_consultas_cidade(p_cidade_id INT) RETURNS VARCHAR AS $$
+DECLARE
+    resultado VARCHAR;
+BEGIN
+    SELECT CONCAT(p.nome_completo, ' - Consultas: ', COUNT(c.consulta_id), ' - Cidade: ', ci.nome)
+    INTO resultado
+    FROM paciente p
+    JOIN consulta c ON p.paciente_id = c.paciente_id
+	JOIN cidade ci ON p.cidade_id = ci.cidade_id
+    WHERE p.cidade_id = p_cidade_id
+    GROUP BY p.paciente_id, p.nome_completo, ci.nome
+    ORDER BY COUNT(c.consulta_id) DESC
+    LIMIT 1;
+
+    IF resultado IS NULL THEN
+        RAISE EXCEPTION 'Nenhum paciente encontrado na cidade com ID %', p_cidade_id;
+    END IF;
+
+    RETURN resultado;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT paciente_consultas_cidade(2);
+
+SELECT paciente_consultas_cidade(6);

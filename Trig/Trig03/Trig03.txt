@@ -1,0 +1,35 @@
+CREATE OR REPLACE FUNCTION verificar_atualizacao_preco()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.preco_comercial IS DISTINCT FROM OLD.preco_comercial THEN
+        IF EXISTS (
+            SELECT 1
+            FROM medicamento_controle
+            WHERE medicamento_id = OLD.medicamento_id
+              AND data_modificacao >= CURRENT_DATE - INTERVAL '30 days'
+        ) THEN
+            RAISE EXCEPTION 'Regra violada: Atualização do preço comercial não permitida, pois já houve uma alteração nos últimos 30 dias para o medicamento ID %.', OLD.medicamento_id;
+        END IF;
+
+        INSERT INTO medicamento_controle (
+            medicamento_id, 
+            data_modificacao, 
+            preco_comercial_old, 
+            preco_comercial_new
+        )
+        VALUES (
+            OLD.medicamento_id, 
+            CURRENT_TIMESTAMP, 
+            OLD.preco_comercial, 
+            NEW.preco_comercial
+        );
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_atualizacao_preco
+BEFORE UPDATE ON medicamento
+FOR EACH ROW
+EXECUTE FUNCTION verificar_atualizacao_preco();

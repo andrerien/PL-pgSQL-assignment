@@ -1,0 +1,17 @@
+CREATE OR REPLACE FUNCTION atualizar_prescricao()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (SELECT possui_prescricao FROM consulta WHERE consulta_id = OLD.consulta_id) > 0 THEN
+        UPDATE consulta
+        SET possui_prescricao = possui_prescricao - 1
+        WHERE consulta_id = OLD.consulta_id;
+    END IF;
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_atualizar_prescricao_consulta
+AFTER DELETE ON prescricao
+FOR EACH ROW
+EXECUTE FUNCTION atualizar_prescricao();

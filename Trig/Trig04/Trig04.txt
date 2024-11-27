@@ -1,0 +1,16 @@
+CREATE OR REPLACE FUNCTION validar_data_agendamento()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.data_agendamento < NOW() THEN
+        RAISE EXCEPTION 'Não é permitido criar uma consulta com data_agendamento retroativa: %', NEW.data_agendamento;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER before_insert_consulta
+BEFORE INSERT ON consulta
+FOR EACH ROW
+EXECUTE FUNCTION validar_data_agendamento();

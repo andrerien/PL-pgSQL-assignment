@@ -1,0 +1,18 @@
+CREATE OR REPLACE PROCEDURE marcar_presenca(in_consulta_id INT)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM consulta WHERE consulta_id = in_consulta_id) THEN
+        RAISE EXCEPTION 'A consulta ID % não existe.', in_consulta_id;
+    END IF;
+    IF EXISTS (SELECT 1 FROM consulta WHERE consulta_id = in_consulta_id AND data_execucao IS NOT NULL) THEN
+        RAISE EXCEPTION 'A consulta ID % já foi realizada em %.', in_consulta_id, (SELECT TO_CHAR(data_execucao, 'DD/MM/YYYY') FROM consulta WHERE consulta_id = in_consulta_id);
+    ELSE
+        UPDATE consulta
+        SET data_execucao = CURRENT_TIMESTAMP
+        WHERE consulta_id = in_consulta_id;
+
+        RAISE NOTICE 'Presença para a consulta ID % marcada com sucesso para %.', in_consulta_id, TO_CHAR(CURRENT_TIMESTAMP, 'DD/MM/YYYY');
+    END IF;
+END;
+$$;

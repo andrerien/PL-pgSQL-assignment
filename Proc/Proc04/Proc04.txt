@@ -1,0 +1,36 @@
+CREATE OR REPLACE PROCEDURE liberar_leito(in_internacao_id INT)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    _status_ocupacao BOOLEAN;
+    _data_liberacao timestamp;
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM internacao WHERE internacao_id = in_internacao_id) THEN
+        RAISE EXCEPTION 'A internação com ID % não existe.', in_internacao_id;
+    END IF;
+
+    SELECT l.status_ocupacao, data_liberacao
+    INTO _status_ocupacao, _data_liberacao
+    FROM internacao a
+    JOIN leito l ON a.leito_id = l.leito_id
+    WHERE a.internacao_id = in_internacao_id;
+
+    IF _status_ocupacao = FALSE THEN
+        RAISE EXCEPTION 'O leito relacionado à internação com ID % não está ocupado.', in_internacao_id;
+    END IF;
+
+    IF _data_liberacao is null THEN
+    UPDATE public.leito
+    SET status_ocupacao = FALSE
+    WHERE leito_id = (
+        SELECT leito_id
+        FROM internacao
+        WHERE internacao_id = in_internacao_id
+    );
+
+    UPDATE internacao
+        SET data_liberacao = now()
+        WHERE internacao_id = in_internacao_id;
+    end if;
+END;
+$$;
